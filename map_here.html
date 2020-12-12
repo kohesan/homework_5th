@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Geocode and Search API</title>
+    <!-- Bootstrap CSS CDN -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" crossorigin="anonymous">
+         <!-- jQuery CDN - Slim version (=without AJAX) -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" crossorigin="anonymous"></script>
+    <!-- Popper.JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js" crossorigin="anonymous"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" crossorigin="anonymous"></script>
+    <!-- Our Custom CSS -->
+    <link rel="stylesheet" type="text/css" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+    <script type="text/javascript" src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+    <!-- Font Awesome JS -->
+    <script defer src="https://use.fontawesome.com/releases/v5.0.13/js/solid.js" crossorigin="anonymous"></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.0.13/js/fontawesome.js" crossorigin="anonymous"></script>
+    <style>
+      @import "https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700";
+      body {
+          font-family: 'Poppins', sans-serif;
+          background: #fafafa;
+      }
+
+      p {
+          font-family: 'Poppins', sans-serif;
+          font-size: 1.1em;
+          font-weight: 300;
+          line-height: 1.7em;
+          color: #999;
+      }
+
+      .wrapper {
+          display: flex;
+          width: 100%;
+          align-items: stretch;
+      }
+
+      #sidebar {
+          min-width: 368px;
+          max-width: 420px;
+          background: #000;
+          color: #fff;
+          transition: all 0.3s;
+      }
+
+      #sidebar.active {
+          margin-left: -400px;
+      }
+
+      #sidebar .sidebar-header {
+          padding: 20px;
+          background: #000;
+      }
+      #sidebar .sidebar-header2 {
+          padding: 20px 20px 0px;
+          background: #000;
+      }
+
+      #sidebar ul.components {
+          padding: 20px 0;
+          border-bottom: 1px solid #47748b;
+      }
+
+      #content {
+          width: 100%; 
+          min-height: 100vh;
+          transition: all 0.3s;
+      }
+
+      @media (max-width: 768px) {
+        #sidebar {
+            margin-left: -400px;
+        }
+        #sidebar.active {
+            margin-left: 0;
+        }
+        #sidebarCollapse span {
+            display: none;
+        }
+      }
+
+      #sidebar ul {
+          background: #fff;
+          margin: 0 1rem;
+          border-radius: .25rem;
+          list-style:none;
+      }
+
+      #sidebar ul li{
+        color:#000;
+        padding: 5px 10px;
+      }
+
+      #autosuggest-items li:focus,
+      #autosuggest-items li:hover {
+        background-color: #148496;
+        cursor: pointer;
+      }
+      ul {
+          list-style: none;
+          background-color: white;
+          padding: 0px;
+          margin-left: 29px;
+          width: 368px;
+      }
+    </style>
+</head>
+
+<body onclick="clearSearchResults()">
+    <div class="wrapper">
+        <!-- Sidebar  -->
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <h3>Autosuggest API</h3>
+            </div>
+            <div class="px-3">
+                <input type="search" class="form-control" name="autosuggest" id="a-box" onkeyup="Autosuggest(this.value)" autocomplete="off" placeholder="キーワードを入力＋候補選択">
+            </div>
+            <div class="autocomplete-dropdown">
+                <ul id="autosuggest-items"></ul>
+            </div>
+            <div class="sidebar-header">
+                <h3>Discover API</h3>
+            </div>
+
+            <div class="input-group px-3">
+                <input type="search" class="form-control" name="discover" id="d-box" autocomplete="off" placeholder="キーワードを入力">
+                <span class="input-group-btn">
+                    <button type="button" id="d-btn" class="btn btn-default">検索</button>
+                </span>
+            </div>
+            <div class="sidebar-header">
+                <h3>Browse API</h3>
+            </div>
+            <div class="input-group px-3">
+                <select type="search" class="form-control" name="browse" list="list" id="b-box" autocomplete="off" placeholder="カテゴリーを選択">
+                    <option value="" disabled selected style='display:none;'>カテゴリーを選択</option>
+                    <option value="100-1000-0000">レストラン</option>
+                    <option value="100-1000-0009">ファストフード</option>
+                    <option value="100-1100-0010">カフェ</option>
+                    <option value="200-2000-0014">カラオケ</option>
+                    <option value="200-2200-0000">演劇・音楽・文化</option>
+                    <option value="300-3000-0023">観光スポット</option>
+                    <option value="400-4100-0035">電車駅</option>
+                    <option value="400-4100-0037">地下鉄駅</option>
+                    <option value="500-5000-0053">ホテル</option>
+                    <option value="600-6000-0061">コンビニ</option>
+                    <option value="700-7000-0107">銀行</option>
+                </select>
+                <span class="input-group-btn">
+                    <button type="button" id="b-btn" class="btn btn-default">検索</button>
+                </span>
+            </div>
+            <div class="sidebar-header">
+                <h3>Geocoding API</h3>
+            </div>
+            <div class="input-group px-3">
+                <input type="search" class="form-control" name="geocode" id="g-box" autocomplete="off" placeholder="住所を入力">
+                <span class="input-group-btn">
+                    <button type="button" id="g-btn" class="btn btn-default">検索</button>
+                </span>
+            </div>
+
+            <div class="sidebar-header2">
+                <p id="latlng">緯度経度 :</p>      
+            </div>
+            <div class="sidebar-header">
+                <h3>Reverse Geocoding API</h3>
+                <p>地図上をクリックしてください</p>    
+                <p id=click>Clicked at :</p>          
+                <p id=address>住所 :</p>     
+            </div>
+        </nav>
+
+        <!-- Page Content  -->
+        <div id="content" style="position: relative;">
+
+            <nav class="navbar navbar-expand-lg navbar-light bg-light mb-0" style="z-index: 3;">
+                <div class="container-fluid">
+
+                    <button type="button" id="sidebarCollapse" class="btn btn-info">
+                        <i class="fas fa-align-left"></i>
+                        <span></span>
+                    </button>
+                </div>
+            </nav>
+
+            <div style="width: 100%;height: 100%;overflow: hidden;position: fixed;top: 0;z-index: 2;" id="mapContainer"></div>
+
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#sidebarCollapse').on('click', function () {
+                $('#sidebar').toggleClass('active');
+            });
+        });
+    </script>
+    <script>
+        var platform = new H.service.Platform({
+            apikey: "APIをここに入力",
+        });
+        var defaultLayers = platform.createDefaultLayers();
+        // configure an OMV service to use the `core` endpoint
+        var omvService = platform.getOMVService({ path: "v2/vectortiles/core/mc" });
+        var baseUrl = "https://js.api.here.com/v3/3.1/styles/omv/oslo/japan/";
+
+        // create a Japan specific style
+        var style = new H.map.Style(`${baseUrl}normal.day.yaml`, baseUrl);
+
+        // instantiate provider and layer for the basemap
+        var omvProvider = new H.service.omv.Provider(omvService, style);
+        var omvlayer = new H.map.layer.TileLayer(omvProvider, { max: 22, dark: true });
+
+        // instantiate (and display) a map:
+        var map = new H.Map(document.getElementById("mapContainer"), omvlayer, {
+            zoom: 16,
+            center: { lat: 35.68026, lng: 139.76744 },
+            // 35.6802N 139.7631E
+        });
+
+        // add a resize listener to make sure that the map occupies the whole container
+        window.addEventListener("resize", () => map.getViewPort().resize());
+
+        // MapEvents enables the event system
+        // Behavior implements default interactions for pan/zoom (also on mobile touch environments)
+        var behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+        var ui = H.ui.UI.createDefault(map, defaultLayers);
+
+//AUTOSUGGEST    
+        //AddDefaultMakerToMap();
+        const Autosuggest = (q) => {
+            if (!q || q == null) {
+                return;
+            }
+            let url = `https://autosuggest.search.hereapi.com/v1/autosuggest?at=35.6990575,139.7623009&q=${q}&limit=3&apikey=ここに入力&lang=ja-JP`;
+            fetch(url)
+                .then((res) => res.json())
+                .then((data) => showAutoSuggestList(data));
+        };
+
+        const AddDefaultMakerToMap = (cordinates = null, textContent) => {
+            if (cordinates == null) {
+                return;
+            }
+            isMapAnimated = true
+            var Marker = new H.map.Marker({ lat: cordinates.lat, lng: cordinates.lng });
+            Marker.setData(textContent);
+            var group = new H.map.Group();
+
+            map.addObject(group);
+
+            // add 'tap' event listener, that opens info bubble, to the group
+            Marker.addEventListener('tap', function (evt) {
+                // map.removeObjects(map.getObjects())
+                // ui.getBubbles().forEach(bub => ui.removeBubble(bub));
+                // event target is the marker itself, group is a parent event target
+                // for all objects that it contains
+                var bubble = new H.ui.InfoBubble(evt.target.getGeometry(), {
+                    // read custom data
+                    content: evt.target.getData()
+                });
+                // show info bubble
+                ui.addBubble(bubble);
+            }, false);
+            map.addObject(Marker);
+            map.setCenter({ lat: cordinates.lat, lng: cordinates.lng }, isMapAnimated);
+
+        };
+
+        const showAutoSuggestList = (data) => {
+            map.removeObjects(map.getObjects())
+            document.getElementById("autosuggest-items").innerHTML = "";
+            data.items.map((item) => {
+                let li = document.createElement("li");
+                li.textContent = item.title;
+                li.dataPosition = item.position;
+                li.addEventListener("click", (e) => {
+                    document.getElementById("autosuggest-items").innerHTML = "";
+                    document.getElementById("a-box").value = e.target.innerHTML;
+                    AddDefaultMakerToMap(e.target.dataPosition, e.target.textContent);
+                });
+                document.getElementById("autosuggest-items").appendChild(li);
+            });
+        };
+
+        const clearSearchResults = () => {
+            document.getElementById("autosuggest-items").innerHTML = "";
+        }
+//DISCOVER
+    $("#d-btn").on("click", function(){
+        var current = map.getCenter();
+        map.removeObjects(map.getObjects())
+        // ui.getBubbles().forEach(bub => ui.removeBubble(bub));
+        function landmarkGeocode(platform) {
+        var geocoder = platform.getSearchService(),
+            landmarkGeocodingParameters = {
+                q: $("#d-box").val(),
+                at: current.lat+','+current.lng,
+                limit: 1
+            };
+
+        geocoder.discover(
+            landmarkGeocodingParameters,
+            onSuccess,
+            onError
+        );
+        }
+
+        function onSuccess(result) {
+        var locations = result.items;
+        addLocationsToMap(locations);
+        // ... etc.
+        }
+
+        function onError(error) {
+        alert('Can\'t reach the remote server');
+        }
+
+        // Hold a reference to any infobubble opened
+        var bubble;
+
+        function openBubble(position, text){
+        if(!bubble){
+            bubble =  new H.ui.InfoBubble(
+            position,
+            {content: text});
+            ui.addBubble(bubble);
+        } else {
+            bubble.setPosition(position);
+            bubble.setContent(text);
+            bubble.open();
+        }
+        }
+
+        function addLocationsToMap(locations){
+        var group = new  H.map.Group(),
+            i;
+
+        // Add a marker for each location found
+        for (i = 0;  i < locations.length; i += 1) {
+            let location = locations[i];
+            marker = new H.map.Marker(location.position);
+            marker.label = location.title;
+            group.addObject(marker);
+        }
+
+        group.addEventListener('tap', function (evt) {
+            map.setCenter(evt.target.getGeometry());
+            openBubble(
+            evt.target.getGeometry(), evt.target.label);
+        }, false);
+
+        // Add the locations group to the map
+        map.addObject(group);
+        map.getViewModel().setLookAtData({
+            bounds: group.getBoundingBox()
+        });
+        map.setZoom(Math.min(map.getZoom(), 16));
+        }
+
+        // Now use the map as required...
+        landmarkGeocode(platform);
+    })
+
+//BROWSE
+    $("#b-btn").on("click", function(){
+        var current = map.getCenter();
+        // var c = current.lat+','+current.lng;
+        // console.log(current.lng);
+        map.removeObjects(map.getObjects())
+        
+        function landmarkGeocode(platform) {
+        var geocoder = platform.getSearchService(),
+            BrowseParameters = {
+                categories: $("#b-box").val(),
+                at: current.lat+','+current.lng,
+                // circle: current.lat+','+current.lng+';'+r=10000,
+                limit: 15,
+                lang: 'ja'
+            };
+
+        geocoder.browse(
+            BrowseParameters,
+            onSuccess,
+            onError
+        );
+        }
+
+        function onSuccess(result) {
+        var locations = result.items;
+        addLocationsToMap(locations);
+        // addLocationsToPanel(locations);
+        // ... etc.
+        }
+
+        function onError(error) {
+        alert('Can\'t reach the remote server');
+        }
+
+        // Hold a reference to any infobubble opened
+        var bubble;
+
+        function openBubble(position, text){
+        if(!bubble){
+            bubble =  new H.ui.InfoBubble(
+            position,
+            {content: text});
+            ui.addBubble(bubble);
+        } else {
+            bubble.setPosition(position);
+            bubble.setContent(text);
+            bubble.open();
+        }
+        }
+
+        function addLocationsToMap(locations){
+        var group = new  H.map.Group(),
+            i;
+
+        // Add a marker for each location found
+        for (i = 0;  i < locations.length; i += 1) {
+            let location = locations[i];
+            marker = new H.map.Marker(location.position);
+            marker.label = location.title;
+            group.addObject(marker);
+        }
+
+        group.addEventListener('tap', function (evt) {
+            map.setCenter(evt.target.getGeometry());
+            openBubble(
+            evt.target.getGeometry(), evt.target.label);
+        }, false);
+
+        // Add the locations group to the map
+        map.addObject(group);
+        // map.getViewModel().setLookAtData({
+        //     bounds: group.getBoundingBox()
+        // });
+        map.setZoom(Math.min(map.getZoom(), 16));
+        }
+
+        // Now use the map as required...
+        landmarkGeocode(platform);
+    })
+    
+//GEOCODE
+    $("#g-btn").on("click", function(){
+        map.removeObjects(map.getObjects())
+        function geocode(platform) {
+        var geocoder = platform.getSearchService(),
+            geocodingParameters = {
+                q: $("#g-box").val(),
+                limit: 1
+            };
+
+        geocoder.geocode(
+            geocodingParameters,
+            onSuccess,
+            onError
+        );
+        }
+        
+        function onSuccess(result) {
+        var locations = result.items;
+        
+        addLocationsToMap(locations);
+        addlatlnginfo(locations);
+        // ... etc.
+        }
+
+        function onError(error) {
+        alert('Can\'t reach the remote server');
+        }
+
+        // Hold a reference to any infobubble opened
+        var bubble;
+
+        function openBubble(position, text){
+        if(!bubble){
+            bubble =  new H.ui.InfoBubble(
+            position,
+            {content: text});
+            ui.addBubble(bubble);
+        } else {
+            bubble.setPosition(position);
+            bubble.setContent(text);
+            bubble.open();
+        }
+        }
+
+        function addlatlnginfo(locations){
+            let result_l = document.getElementById('latlng');
+            let location = locations[0];
+                position = location.position;
+            let latlng = '緯度経度 : ' + Math.abs(position.lat.toFixed(4)) + ((position.lat > 0) ? 'N' : 'S') +
+                ' ' + Math.abs(position.lng.toFixed(4)) + ((position.lng > 0) ? 'E' : 'W');
+            result_l.innerHTML = latlng;
+        }
+
+        function addLocationsToMap(locations){
+        debugger
+        var group = new  H.map.Group(),
+            position,
+            i;
+
+        // Add a marker for each location found
+        for (i = 0;  i < locations.length; i += 1) {
+            let location = locations[i];
+            marker = new H.map.Marker(location.position);
+            marker.label = location.address.label;
+            group.addObject(marker);
+        }
+
+        group.addEventListener('tap', function (evt) {
+            map.setCenter(evt.target.getGeometry());
+            openBubble(
+            evt.target.getGeometry(), evt.target.label);
+        }, false);
+
+        // Add the locations group to the map
+        map.addObject(group);
+        map.setCenter(group.getBoundingBox().getCenter());
+        }
+
+        // Now use the map as required...
+        geocode(platform);
+    })
+
+//REVERSE GEOCODE
+        function setUpClickListener(map) {
+        // Attach an event listener to map display
+        // obtain the coordinates and display in an alert box.
+        map.addEventListener('tap', function (evt) {
+            // map.removeObjects(map.getObjects())
+            // ui.getBubbles().forEach(bub => ui.removeBubble(bub));
+            var coord = map.screenToGeo(evt.currentPointer.viewportX,
+                    evt.currentPointer.viewportY);
+                    // console.log(coord.lat+','+coord.lng);
+            logEvent('Clicked at : ' + Math.abs(coord.lat.toFixed(4)) +
+                ((coord.lat > 0) ? 'N' : 'S') +
+                ' ' + Math.abs(coord.lng.toFixed(4)) +
+                ((coord.lng > 0) ? 'E' : 'W'));
+            // // Get an instance of the search service:
+            var service = platform.getSearchService();
+
+            // Call the reverse geocode method with the geocoding parameters,
+            // the callback and an error callback function (called if a
+            // communication error occurs):
+            service.reverseGeocode({
+            at: coord.lat+','+coord.lng
+            }, (result) => {
+            result.items.forEach((item) => {
+                // Assumption: ui is instantiated
+                // Create an InfoBubble at the returned location with
+                // the address as its contents:
+                // ui.addBubble(new H.ui.InfoBubble(item.position, {
+                // content: item.address.label
+                // }));
+                let result_a = document.getElementById('address');
+                let address = '住所 : ' + item.address.label;
+                result_a.innerHTML = address;
+            });
+            }, alert);
+        });
+        }
+
+        // Helper for logging events
+         function logEvent(str) {
+        let result_c = document.getElementById('click');
+        result_c.innerHTML = str;
+        }
+        setUpClickListener(map);
+    
+    </script>
+</body>
+</html>
